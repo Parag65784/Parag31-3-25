@@ -6,6 +6,8 @@ import Footer from './components/Footer';
 import Home from './pages/Home';
 import Dashboard from './pages/Dashboard';
 import Games from './pages/Games';
+import Markets from './pages/Markets';
+import MarketDetails from './pages/MarketDetails';
 import PlaceBet from './pages/PlaceBet';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -31,6 +33,8 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/games" element={<Games />} />
+              <Route path="/markets" element={<Markets />} />
+              <Route path="/markets/:marketId" element={<MarketDetails />} />
               <Route path="/place-bet/:gameId" element={<PlaceBet />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
@@ -39,7 +43,6 @@ function App() {
               <Route path="/how-to-play" element={<HowToPlay />} />
               <Route path="/add-funds" element={<AddFunds />} />
               <Route path="/support" element={<Support />} />
-              
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/responsible-gaming" element={<ResponsibleGaming />} />

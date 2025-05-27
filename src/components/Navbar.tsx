@@ -19,6 +19,7 @@ const Navbar = () => {
           
           <div className="hidden md:flex items-center space-x-6">
             <Link to="/games" className="text-white hover:text-casino-gold transition-colors">Games</Link>
+            <Link to="/markets" className="text-white hover:text-casino-gold transition-colors">Markets</Link>
             <Link to="/how-to-play" className="text-white hover:text-casino-gold transition-colors">How to Play</Link>
             {user ? (
               <>
@@ -64,6 +65,7 @@ const Navbar = () => {
         {isMenuOpen && (
           <div className="md:hidden pb-4">
             <Link to="/games" className="block py-2 text-white hover:text-casino-gold">Games</Link>
+            <Link to="/markets" className="block py-2 text-white hover:text-casino-gold">Markets</Link>
             <Link to="/how-to-play" className="block py-2 text-white hover:text-casino-gold">How to Play</Link>
             {user ? (
               <>
