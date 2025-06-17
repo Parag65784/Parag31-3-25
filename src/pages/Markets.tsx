@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { TrendingUp, Clock, DollarSign, Users, Search, Filter, ChevronRight } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+import {
+  TrendingUp,
+  Clock,
+  DollarSign,
+  Users,
+  Search,
+  ChevronRight,
+} from 'lucide-react';
 import Card3D from '../components/Card3D';
 import GradientBorder from '../components/GradientBorder';
 
@@ -9,11 +17,18 @@ interface Market {
   title: string;
   description: string;
   volume: number;
-  endDate: string;
+  end_date: string;
   probability: number;
   liquidity: number;
   traders: number;
 }
+
+// ✅ Replace with your actual Supabase project URL and anon key
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Move supabase client export to top-level scope
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const Markets = () => {
   const [markets, setMarkets] = useState<Market[]>([]);
@@ -21,58 +36,53 @@ const Markets = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filter, setFilter] = useState('all');
 
-  useEffect(() => {
-    const fetchMarkets = async () => {
-      try {
-        // In a real implementation, this would fetch from Polymarket's API
-        const response = await fetch('https://polymarket.com/api/markets');
-        const data = await response.json();
-        setMarkets(sampleMarkets); // Using sample data for now
-      } catch (error) {
-        console.error('Error fetching markets:', error);
-      } finally {
-        setLoading(false);
+// Move fetchMarkets outside so it's accessible in both useEffects
+const fetchMarkets = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('markets')
+      .select('*')
+      .order('end_date', { ascending: true });
+
+    if (error) throw error;
+
+    setMarkets(data as Market[]);
+  } catch (error) {
+    console.error('Error fetching markets:', error);
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  fetchMarkets();
+}, []);
+
+useEffect(() => {
+  const channel = supabase
+    .channel('public:markets')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'markets',
+      },
+      (payload) => {
+        console.log('Realtime update:', payload);
+        // Refresh the markets list after insert/update/delete
+        fetchMarkets();
       }
-    };
+    )
+    .subscribe();
 
-    fetchMarkets();
-  }, []);
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, []);
 
-  // Sample market data
-  const sampleMarkets: Market[] = [
-    {
-      id: '1',
-      title: "Will BTC close above $115,000 on May 31st, 2025?",
-      description: "This market will resolve to Yes if the price of Bitcoin (BTC) closes above $115,000 on May 31st, 2025.",
-      volume: 2500000,
-      endDate: "2025-05-31",
-      probability: 0.75,
-      liquidity: 1200000,
-      traders: 1250
-    },
-    {
-      id: '2',
-      title: "Israel military action against Iran before July??",
-      description: "This market will resolve to Yes if Israel initiates a military action on Iranian soil, airspace, or maritime territory or against any Iranian embassies or consulates between March 31, and June 30, 2025, 11:59 PM ET. Otherwise, this market will resolve to No.",
-      volume: 1800000,
-      endDate: "2025-07-01",
-      probability: 0.82,
-      liquidity: 900000,
-      traders: 850
-    },
-    {
-      id: '3',
-      title: "Will Solana hit $190 in May??",
-      description: "This market will immediately resolve to Yes if any Binance 1 minute candle for Solana (SOLUSDT) between May 1, 2025, 00:00 and May 31, 2025, 23:59 in the ET timezone has a final High price of $190.00 or higher. Otherwise, this market will resolve to No",
-      volume: 3200000,
-      endDate: "2025-12-31",
-      probability: 0.68,
-      liquidity: 1500000,
-      traders: 2100
-    }
-  ];
 
-  const filteredMarkets = sampleMarkets.filter(market => 
+  const filteredMarkets = markets.filter((market) =>
     market.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -81,7 +91,9 @@ const Markets = () => {
       <div className="container mx-auto px-4">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-casino-gold mb-4">Prediction Markets</h1>
+            <h1 className="text-4xl font-bold text-casino-gold mb-4">
+              Prediction Markets
+            </h1>
             <p className="text-gray-300 max-w-2xl mx-auto">
               Trade on your beliefs and earn rewards for being right. Explore our prediction markets.
             </p>
@@ -101,36 +113,23 @@ const Markets = () => {
                 <Search className="absolute left-3 top-2.5 w-5 h-5 text-gray-400" />
               </div>
               <div className="flex gap-2">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    filter === 'all'
-                      ? 'bg-casino-gold text-casino-black'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  All Markets
-                </button>
-                <button
-                  onClick={() => setFilter('trending')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    filter === 'trending'
-                      ? 'bg-casino-gold text-casino-black'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  Trending
-                </button>
-                <button
-                  onClick={() => setFilter('ending')}
-                  className={`px-4 py-2 rounded-lg transition-colors ${
-                    filter === 'ending'
-                      ? 'bg-casino-gold text-casino-black'
-                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  Ending Soon
-                </button>
+                {['all', 'trending', 'ending'].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => setFilter(type)}
+                    className={`px-4 py-2 rounded-lg transition-colors ${
+                      filter === type
+                        ? 'bg-casino-gold text-casino-black'
+                        : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                    }`}
+                  >
+                    {type === 'all'
+                      ? 'All Markets'
+                      : type === 'trending'
+                      ? 'Trending'
+                      : 'Ending Soon'}
+                  </button>
+                ))}
               </div>
             </div>
           </Card3D>
@@ -143,34 +142,34 @@ const Markets = () => {
                   <div className="flex-1">
                     <h3 className="text-xl font-bold text-white mb-2">{market.title}</h3>
                     <p className="text-gray-300 text-sm mb-4">{market.description}</p>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                       <div className="bg-gray-800/50 p-3 rounded-lg">
                         <div className="flex items-center text-casino-gold mb-1">
                           <TrendingUp className="w-4 h-4 mr-2" />
                           <span className="text-sm">Volume</span>
                         </div>
-                        <span className="text-white font-bold">${market.volume.toLocaleString()}</span>
+                        <span className="text-white font-bold">${Number(market.volume).toLocaleString()}</span>
                       </div>
-                      
+
                       <div className="bg-gray-800/50 p-3 rounded-lg">
                         <div className="flex items-center text-casino-gold mb-1">
                           <Clock className="w-4 h-4 mr-2" />
                           <span className="text-sm">Ends</span>
                         </div>
                         <span className="text-white font-bold">
-                          {new Date(market.endDate).toLocaleDateString()}
+                          {new Date(market.end_date).toLocaleDateString()}
                         </span>
                       </div>
-                      
+
                       <div className="bg-gray-800/50 p-3 rounded-lg">
                         <div className="flex items-center text-casino-gold mb-1">
                           <DollarSign className="w-4 h-4 mr-2" />
                           <span className="text-sm">Liquidity</span>
                         </div>
-                        <span className="text-white font-bold">${market.liquidity.toLocaleString()}</span>
+                        <span className="text-white font-bold">${Number(market.liquidity).toLocaleString()}</span>
                       </div>
-                      
+
                       <div className="bg-gray-800/50 p-3 rounded-lg">
                         <div className="flex items-center text-casino-gold mb-1">
                           <Users className="w-4 h-4 mr-2" />
@@ -180,12 +179,12 @@ const Markets = () => {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col justify-center items-center md:items-end gap-4">
                     <div className="text-center md:text-right">
                       <p className="text-sm text-gray-300 mb-1">Current Probability</p>
                       <p className="text-3xl font-bold text-casino-gold">
-                        {(market.probability * 100).toFixed(1)}%
+                        {(Number(market.probability) * 100).toFixed(1)}%
                       </p>
                     </div>
                     <Link
